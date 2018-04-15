@@ -166,7 +166,7 @@ void loop()
   // Calculate water quality parameters using equations from calibration curves
   // These variables are required for the below functions
   int Depth_pin = analogRead(A0);
-  int TSS_pin = analogRead(A1); 
+  int TSS_pin = analogRead(A1);
   int Temp_pin = analogRead(A2);
   int Volt_pin = analogRead(A3);
   float Depth_m = 0.0075*(float(Depth_pin))-0.7786;                               
