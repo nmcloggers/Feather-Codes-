@@ -99,7 +99,7 @@ void setup() {
   WiFi.setPins(8,7,4,2);
   
   // start the serial connection, sets rate of data transmission
-  //Serial.begin(115200);
+  Serial.begin(115200);
 
   // wait for serial monitor to open
   while (!Serial);
