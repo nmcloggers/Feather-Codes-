@@ -20,8 +20,8 @@
 // All text above must be included in any redistribution.
 
 /************************* WiFI Setup *****************************/
-char ssid[] = "Projects";     //  your network SSID (name)
-char pass[] = "StudentProjects";    // your network password (use for WPA, or use as key for WEP)
+char ssid[] = "SSID";     //  your network SSID (name)
+char pass[] = "PASSWORD";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
@@ -30,9 +30,8 @@ int status = WL_IDLE_STATUS;
 
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
-#define AIO_USERNAME    "djcarris"
-#define AIO_KEY         "0fdce9c9a6f5488c89ad4274f5abf722"
-int LOOP_DELAY = 60000;
+#define AIO_USERNAME    "USERNAME"
+#define AIO_KEY         "AIO_KEY"
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -55,14 +54,12 @@ Adafruit_MQTT_Publish Voltage = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feed
 Adafruit_MQTT_Publish Depth_calc = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/marcellus-library.stage-m");
 Adafruit_MQTT_Publish Temperature_calc = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/marcellus-library.temperature-f");
 Adafruit_MQTT_Publish TSS_calc = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/marcellus-library.tss-mg-slash-l");
-Adafruit_MQTT_Publish Voltage_calc = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/marcellus-library.voltage-v");
+Adafruit_MQTT_Publish Voltage_calc = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/marcellus-library.voltage-V");
 
 // Sensor reading variables
 // first assignemnt of current and last variables to be overwritten later
 int current = 0;
 int last = -1;
-// Battery Voltage pin
-#define VBATPIN A7
 
 // RTC clock setup
 #if defined(ARDUINO_ARCH_SAMD)
@@ -169,29 +166,21 @@ void loop()
   // Calculate water quality parameters using equations from calibration curves
   // These variables are required for the below functions
   int Depth_pin = analogRead(A0);
-  int TSS_pin = analogRead(A1); 
+  int TSS_pin = analogRead(A1);
   int Temp_pin = analogRead(A2);
   int Volt_pin = analogRead(A3);
-  float Depth_m = 0.0075*((float)Depth_pin)-0.7786;                             
-  float TSS_mgL = 23977*exp(-0.007*((float)TSS_pin));
-  float Temp_F = 0.2165*((float)Temp_pin)-7.6926;
-  float Volt_V = 0.0075*((float)Volt_pin)-3.3825;
-  float measuredvbat = analogRead(VBATPIN);
-  
-  measuredvbat *= 2;    // we divided by 2, so multiply back
-  measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
-  measuredvbat /= 1024; // convert to voltage
-  
-  Serial.print("VBat: " ); Serial.println(measuredvbat);
-
-  // call function to publish data
-  IO_publish ( Depth_pin, TSS_pin, Temp_pin, Volt_pin, Depth_m, TSS_mgL, Temp_F, Volt_V);
-  WiFi.lowPowerMode();
+  float Depth_m = 0.0075*(float(Depth_pin))-0.7786;                               
+  float TSS_mgL = 23977*exp(-0.007*float(TSS_pin));
+  float Temp_F = 0.2165*(float(Temp_pin))-7.6926;
+  float Volt_V = Volt_pin;
   
   // call function to write data to SD card
   SD_write(Depth_pin, TSS_pin, Temp_pin, Volt_pin, Depth_m, TSS_mgL, Temp_F, Volt_V);
   
-  delay(LOOP_DELAY);
+  // call function to publish data
+  IO_publish ( Depth_pin, TSS_pin, Temp_pin, Volt_pin, Depth_m, TSS_mgL, Temp_F, Volt_V);
+  
+  delay(1800000);
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
@@ -233,7 +222,7 @@ void MQTT_connect() {
 }
 
 // SD card writing function
-void SD_write(int Depth_pin, int TSS_pin, int Temp_pin, int Volt_pin, float Depth_m, float TSS_mgL, float Temp_F, float Volt_V)
+void SD_write(int Depth_pin, int TSS_pin, int Temp_pin, int Volt_pin, int Depth_m, int TSS_mgL, int Temp_F, int Volt_V)
 {
   DateTime now = rtc.now();
     String line = "";
@@ -276,7 +265,7 @@ void SD_write(int Depth_pin, int TSS_pin, int Temp_pin, int Volt_pin, float Dept
 }
 
 // IO publishing function
-void IO_publish (int Depth_pin, int TSS_pin, int Temp_pin, int Volt_pin, float Depth_m, float TSS_mgL, float Temp_F, float Volt_V)
+void IO_publish (int Depth_pin, int TSS_pin, int Temp_pin, int Volt_pin, int Depth_m, int TSS_mgL, int Temp_F, int Volt_V)
 {
 Serial.print(F("\nSending Depth val "));
   Serial.print(Depth_pin);
@@ -317,7 +306,7 @@ Serial.print(F("\nSending Depth val "));
   Serial.print(F("\nSending Depth calculation val "));
   Serial.print(Depth_m);
   Serial.print("...");
-  if (! Depth_calc.publish(float(Depth_m))) {
+  if (! Depth_calc.publish(uint32_t(Depth_m))) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("OK!"));
@@ -326,7 +315,7 @@ Serial.print(F("\nSending Depth val "));
   Serial.print(F("\nSending TSS calculation val "));
   Serial.print(TSS_mgL);
   Serial.print("...");
-  if (! TSS_calc.publish(float(TSS_mgL))) {
+  if (! TSS_calc.publish(uint32_t(TSS_mgL))) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("OK!"));
@@ -335,7 +324,7 @@ Serial.print(F("\nSending Depth val "));
   Serial.print(F("\nSending Temperature calculation val "));
   Serial.print(Temp_F);
   Serial.print("...");
-  if (! Temperature_calc.publish(float(Temp_F))) {
+  if (! Temperature_calc.publish(uint32_t(Temp_F))) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("OK!"));
@@ -344,7 +333,7 @@ Serial.print(F("\nSending Depth val "));
   Serial.print(F("\nSending Voltage calculation val "));
   Serial.print(Volt_V);
   Serial.print("...");
-  if (! Voltage_calc.publish(float(Volt_V))) {
+  if (! Voltage_calc.publish(uint32_t(Volt_V))) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("OK!"));
